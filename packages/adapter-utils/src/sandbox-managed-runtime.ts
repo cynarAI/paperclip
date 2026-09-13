@@ -1084,7 +1084,13 @@ export async function prepareSandboxManagedRuntime(input: {
 }): Promise<PreparedSandboxManagedRuntime> {
   const workspaceRemoteDir = input.workspaceRemoteDir ?? input.spec.remoteCwd;
   const runtimeRootDir = path.posix.join(workspaceRemoteDir, ".paperclip-runtime", input.adapterKey);
-  const syncWorkspace = input.syncWorkspace !== false;
+  // A workspace directory that does not exist on this host has nothing to
+  // stage, no files for ignore rules to govern, and nothing to restore into —
+  // callers that only stage credential assets (the adapter env tests) hand
+  // the runtime a fresh path. Treat it as "do not sync" rather than letting
+  // the ignore scan or the staging walk die on ENOENT.
+  const syncWorkspace = input.syncWorkspace !== false &&
+    (await fs.access(input.workspaceLocalDir).then(() => true, () => false));
   const workspaceInboundMode = input.workspaceInboundMode ?? "host_current";
   const stageWorkspace =
     syncWorkspace && workspaceInboundMode !== "adopt_remote";
