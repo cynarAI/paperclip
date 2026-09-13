@@ -1,7 +1,7 @@
 import * as React from "react";
 import { StrictMode } from "react";
 import * as ReactDOM from "react-dom";
-import { BrowserRouter } from "@/lib/router";
+import { PaperclipRouter } from "@/lib/router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./App";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
@@ -66,7 +66,7 @@ getOrCreatePaperclipReactRoot(window, rootElement).render(
       <QueryClientProvider client={queryClient}>
         <SentryGate />
         <ThemeProvider>
-          <BrowserRouter>
+          <PaperclipRouter>
             <CompanyProvider>
               <EditorAutocompleteProvider>
                 <ToastProvider>
@@ -88,7 +88,7 @@ getOrCreatePaperclipReactRoot(window, rootElement).render(
                 </ToastProvider>
               </EditorAutocompleteProvider>
             </CompanyProvider>
-          </BrowserRouter>
+          </PaperclipRouter>
         </ThemeProvider>
       </QueryClientProvider>
     </AppErrorBoundary>

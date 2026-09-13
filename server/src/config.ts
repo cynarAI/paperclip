@@ -18,6 +18,7 @@ import {
   type AuthBaseUrlMode,
   type DeploymentExposure,
   type DeploymentMode,
+  normalizeUiBasePath,
   type SecretProvider,
   type StorageProvider,
   inferBindModeFromHost,
@@ -79,6 +80,7 @@ export interface Config {
   workspaceReaperCooldownDays: number;
   serveUi: boolean;
   uiDevMiddleware: boolean;
+  uiBasePath: string;
   secretsProvider: SecretProvider;
   secretsStrictMode: boolean;
   secretsMasterKeyFilePath: string;
@@ -343,6 +345,7 @@ export function loadConfig(): Config {
         ? process.env.SERVE_UI === "true"
         : fileConfig?.server.serveUi ?? true,
     uiDevMiddleware: process.env.PAPERCLIP_UI_DEV_MIDDLEWARE === "true",
+    uiBasePath: normalizeUiBasePath(process.env.PAPERCLIP_UI_BASE_PATH),
     secretsProvider,
     secretsStrictMode,
     secretsMasterKeyFilePath:

@@ -6,9 +6,17 @@ import { createUiDevWatchOptions } from "./src/lib/vite-watch";
 import { createApiProxy } from "./src/lib/vite-api-proxy";
 import { serviceWorkerBuildIdPlugin } from "./src/lib/vite-sw-build-id";
 
+function normalizeUiViteBase(value: string | undefined): string {
+  const trimmed = (value ?? "").trim();
+  if (trimmed === "" || trimmed === "/") return "/";
+  return `/${trimmed.replace(/^\/+|\/+$/g, "")}/`;
+}
+
 const apiProxy = createApiProxy();
+const uiBase = normalizeUiViteBase(process.env.PAPERCLIP_UI_BASE_PATH);
 
 export default defineConfig(({ mode }) => ({
+  base: uiBase,
   plugins: [react(), tailwindcss(), serviceWorkerBuildIdPlugin()],
   build: {
     minify: "esbuild",

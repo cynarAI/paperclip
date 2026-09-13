@@ -118,8 +118,7 @@ import { managedAgentProfileRoutes } from "./routes/managed-agent-profiles.js";
 import { remoteAgentProfileRoutes } from "./routes/remote-agent-profiles.js";
 import { pluginUiStaticRoutes } from "./routes/plugin-ui-static.js";
 import { injectCloudUiSnippet } from "./cloud-ui-snippet.js";
-import { readBrandedStaticIndexHtml } from "./static-index-html.js";
-import { staticUiCacheControl } from "./static-ui-cache.js";
+import { mountStaticUi, resolveUiDistCandidates } from "./static-ui-mount.js";
 import { applyUiBranding } from "./ui-branding.js";
 import { logger } from "./middleware/logger.js";
 import {
@@ -169,6 +168,8 @@ import {
   DEFAULT_JSON_BODY_LIMIT,
   PORTABLE_JSON_BODY_LIMIT,
 } from "./http/body-limits.js";
+import { normalizeUiBasePath } from "@paperclipai/shared";
+import { shouldServeViteDevHtml } from "./vite-dev-html-policy.js";
 import { COMPANY_IMPORT_API_PATH } from "./routes/company-import-paths.js";
 import { apiCompression } from "./middleware/api-compression.js";
 import { chatWebhookBodyParser } from "./middleware/chat-webhook-body.js";
@@ -177,24 +178,6 @@ import { createChatWebhookDiagnostics } from "./services/chat-webhook-diagnostic
 type UiMode = "none" | "static" | "vite-dev";
 const FEEDBACK_EXPORT_FLUSH_INTERVAL_MS = 5_000;
 const CHAT_PUBLICATION_FLUSH_INTERVAL_MS = 1_000;
-const VITE_DEV_ASSET_PREFIXES = [
-  "/@fs/",
-  "/@id/",
-  "/@react-refresh",
-  "/@vite/",
-  "/assets/",
-  "/node_modules/",
-  "/src/",
-];
-const VITE_DEV_STATIC_PATHS = new Set([
-  "/apple-touch-icon.png",
-  "/favicon-16x16.png",
-  "/favicon-32x32.png",
-  "/favicon.ico",
-  "/favicon.svg",
-  "/site.webmanifest",
-  "/sw.js",
-]);
 
 export function isDatabaseConnectionUnavailableError(err: unknown): boolean {
   const error = err as { code?: unknown; message?: unknown; cause?: unknown };
@@ -249,13 +232,7 @@ export function listenViteHmrServer(
   });
 }
 
-export function shouldServeViteDevHtml(req: ExpressRequest): boolean {
-  const pathname = req.path;
-  if (VITE_DEV_STATIC_PATHS.has(pathname)) return false;
-  if (VITE_DEV_ASSET_PREFIXES.some((prefix) => pathname.startsWith(prefix)))
-    return false;
-  return req.accepts(["html"]) === "html";
-}
+export { shouldServeViteDevHtml } from "./vite-dev-html-policy.js";
 
 export function shouldEnablePrivateHostnameGuard(opts: {
   deploymentMode: DeploymentMode;
@@ -470,6 +447,7 @@ export async function createApp(
     deploymentExposure: DeploymentExposure;
     allowedHostnames: string[];
     bindHost: string;
+    uiBasePath?: string;
     authPublicBaseUrl?: string;
     chatWebhookPublicBaseUrl?: string;
     authReady: boolean;
@@ -941,61 +919,11 @@ export async function createApp(
   );
 
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const uiBasePath = normalizeUiBasePath(opts.uiBasePath);
   if (opts.uiMode === "static") {
-    // Try published location first (server/ui-dist/), then monorepo dev location (../../ui/dist)
-    const candidates = [
-      path.resolve(__dirname, "../ui-dist"),
-      path.resolve(__dirname, "../../ui/dist"),
-    ];
-    const uiDist = candidates.find((p) =>
-      fs.existsSync(path.join(p, "index.html")),
-    );
+    const uiDist = resolveUiDistCandidates(__dirname);
     if (uiDist) {
-      // Hashed asset files (Vite emits them under /assets/<name>.<hash>.<ext>)
-      // never change once built, so they can be cached aggressively.
-      app.use(
-        "/assets",
-        express.static(path.join(uiDist, "assets"), {
-          maxAge: "1y",
-          immutable: true,
-        }),
-      );
-      // Serve root/index through the same runtime HTML transform as SPA routes.
-      app.get(["/", "/index.html"], (_req, res) => {
-        res.type("html").set("Cache-Control", "no-cache").send(readBrandedStaticIndexHtml(uiDist));
-      });
-      // Non-hashed static files (favicon.ico, manifest, robots.txt, etc.):
-      // short cache so operators who swap them out see the new version
-      // reasonably fast, with must-revalidate overrides for index.html and
-      // sw.js (see staticUiCacheControl for why those two).
-      app.use(
-        express.static(uiDist, {
-          maxAge: "1h",
-          setHeaders(res, filePath) {
-            const override = staticUiCacheControl(filePath);
-            if (override) {
-              res.set("Cache-Control", override);
-            }
-          },
-        }),
-      );
-      // SPA fallback. Only for non-asset routes — if the browser asks for
-      // /assets/something.js that doesn't exist, we must NOT serve the HTML
-      // shell: the browser would try to load it as a JavaScript module, fail
-      // with a MIME-type error, and cache that broken response. Return 404
-      // instead. The index.html response itself is no-cache so a subsequent
-      // deploy's updated asset hashes are picked up on next load.
-      app.get(/.*/, (req, res) => {
-        if (req.path.startsWith("/assets/")) {
-          res.status(404).end();
-          return;
-        }
-        res
-          .status(200)
-          .set("Content-Type", "text/html")
-          .set("Cache-Control", "no-cache")
-          .end(readBrandedStaticIndexHtml(uiDist));
-      });
+      mountStaticUi(app, uiDist, uiBasePath);
     } else {
       console.warn("[paperclip] UI dist not found; running in API-only mode");
     }
@@ -1034,6 +962,7 @@ export async function createApp(
     const configuredViteCacheDir = process.env.PAPERCLIP_VITE_CACHE_DIR?.trim();
     const vite = await createViteServer({
       root: uiRoot,
+      base: uiBasePath ? `${uiBasePath}/` : "/",
       ...(configuredViteCacheDir
         ? { cacheDir: path.resolve(configuredViteCacheDir) }
         : {}),
@@ -1078,9 +1007,12 @@ export async function createApp(
 
     if (fs.existsSync(publicUiRoot)) {
       app.use(express.static(publicUiRoot, { index: false }));
+      if (uiBasePath) {
+        app.use(uiBasePath, express.static(publicUiRoot, { index: false }));
+      }
     }
     app.get(/.*/, async (req, res, next) => {
-      if (!shouldServeViteDevHtml(req)) {
+      if (!shouldServeViteDevHtml(req, uiBasePath)) {
         next();
         return;
       }

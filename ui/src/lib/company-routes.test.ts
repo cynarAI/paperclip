@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   applyCompanyPrefix,
   extractCompanyPrefixFromPath,
@@ -7,6 +7,10 @@ import {
 } from "./company-routes";
 
 describe("company routes", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("treats the task-list alias as an unprefixed board route", () => {
     expect(isBoardPathWithoutPrefix("/tasks")).toBe(true);
     expect(extractCompanyPrefixFromPath("/tasks")).toBeNull();
@@ -136,6 +140,15 @@ describe("company routes", () => {
     expect(toCompanyRelativePath("/PAP/skills/studio/new?forkFrom=skill-1")).toBe(
       "/skills/studio/new?forkFrom=skill-1",
     );
+  });
+
+  it("ignores a configured UI base path when classifying global routes", () => {
+    vi.stubEnv("BASE_URL", "/board/");
+    expect(extractCompanyPrefixFromPath("/board/invite")).toBeNull();
+    expect(extractCompanyPrefixFromPath("/board/auth")).toBeNull();
+    expect(extractCompanyPrefixFromPath("/board/board-claim")).toBeNull();
+    expect(extractCompanyPrefixFromPath("/board/PAP/dashboard")).toBe("PAP");
+    expect(applyCompanyPrefix("/board/tasks", "PAP")).toBe("/PAP/tasks");
   });
 
   it("preserves artifact deep-link anchors when applying the company prefix", () => {

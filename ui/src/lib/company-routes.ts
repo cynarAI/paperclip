@@ -1,3 +1,5 @@
+import { stripUiBasePath } from "./ui-base-path";
+
 const BOARD_ROUTE_ROOTS = new Set([
   "dashboard",
   "companies",
@@ -48,13 +50,18 @@ function splitPath(path: string): { pathname: string; search: string; hash: stri
   };
 }
 
+function normalizeAppPathname(pathname: string): string {
+  return stripUiBasePath(pathname);
+}
+
 function getRootSegment(pathname: string): string | null {
-  const segment = pathname.split("/").filter(Boolean)[0];
+  const segment = normalizeAppPathname(pathname).split("/").filter(Boolean)[0];
   return segment ?? null;
 }
 
 export function isGlobalPath(pathname: string): boolean {
-  if (pathname === "/") return true;
+  const appPathname = normalizeAppPathname(pathname);
+  if (appPathname === "/" || appPathname === "") return true;
   const root = getRootSegment(pathname);
   if (!root) return true;
   return GLOBAL_ROUTE_ROOTS.has(root.toLowerCase());
@@ -67,7 +74,7 @@ export function isBoardPathWithoutPrefix(pathname: string): boolean {
 }
 
 export function extractCompanyPrefixFromPath(pathname: string): string | null {
-  const segments = pathname.split("/").filter(Boolean);
+  const segments = normalizeAppPathname(pathname).split("/").filter(Boolean);
   if (segments.length === 0) return null;
   const first = segments[0]!.toLowerCase();
   if (GLOBAL_ROUTE_ROOTS.has(first) || BOARD_ROUTE_ROOTS.has(first)) {
@@ -79,14 +86,15 @@ export function extractCompanyPrefixFromPath(pathname: string): string | null {
 export function applyCompanyPrefix(path: string, companyPrefix: string | null | undefined): string {
   const { pathname, search, hash } = splitPath(path);
   if (!pathname.startsWith("/")) return path;
-  if (isGlobalPath(pathname)) return path;
+  const appPathname = normalizeAppPathname(pathname);
+  if (isGlobalPath(appPathname)) return path;
   if (!companyPrefix) return path;
 
   const prefix = normalizeCompanyPrefix(companyPrefix);
-  const activePrefix = extractCompanyPrefixFromPath(pathname);
+  const activePrefix = extractCompanyPrefixFromPath(appPathname);
   if (activePrefix) return path;
 
-  return `/${prefix}${pathname}${search}${hash}`;
+  return `/${prefix}${appPathname}${search}${hash}`;
 }
 
 /**
@@ -112,7 +120,7 @@ export function caseHref(
 
 export function toCompanyRelativePath(path: string): string {
   const { pathname, search, hash } = splitPath(path);
-  const segments = pathname.split("/").filter(Boolean);
+  const segments = normalizeAppPathname(pathname).split("/").filter(Boolean);
 
   if (segments.length >= 2) {
     const second = segments[1]!.toLowerCase();
