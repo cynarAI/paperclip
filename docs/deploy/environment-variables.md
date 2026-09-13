@@ -38,10 +38,41 @@ key remains accepted in stored and managed configuration for version-skew
 compatibility, but it has no runtime effect. The setting has no effect on
 legacy adapters or callback bridges.
 
+### Subdirectory UI deploy (`/board`, Tailscale Serve, reverse proxies)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PAPERCLIP_UI_BASE_PATH` | (unset, root `/`) | Optional path prefix where the board SPA is published, e.g. `/board`. Set the same value at **UI build time** and **server runtime**. It drives Vite `base`, React Router `basename`, company-route parsing, static asset mounts, and service-worker registration. Leave unset for root-origin deploys. |
+
+Example (Tailscale/nginx publishes `https://example.ts.net/board/`):
+
+```sh
+export PAPERCLIP_UI_BASE_PATH=/board
+export PAPERCLIP_PUBLIC_URL=https://example.ts.net
+pnpm --filter @paperclipai/ui build
+pnpm dev   # or your production start command with the same env
+```
+
+`PAPERCLIP_PUBLIC_URL` stays **origin-only** (scheme + host + port). Do not append
+the UI prefix. Better Auth, OAuth callbacks, invite links, and trusted-origin
+checks continue to use the public origin; the browser reaches auth at
+`https://example.ts.net/board/auth` because the SPA basename and Vite asset
+paths include `/board`.
+
+Paperclip serves the built UI at both the configured prefix and the server root
+so either proxy style works:
+
+- **Prefix preserved:** forward `/board/*` to Paperclip unchanged.
+- **Prefix stripped:** forward `/board/*` to `/*` on the Paperclip port; asset
+  requests still arrive as `/board/assets/...` from the browser.
+
+The API remains at `/api` on the same origin. Configure your proxy to forward
+`/api` (and `/board/api` if you terminate both on one host) to Paperclip.
+
 ### Webhook-only chat ingress
 
 Keep `PAPERCLIP_PUBLIC_URL` (or the explicit authentication public URL) pointed
-at the actual board. If the board is private, set
+at the actual board origin (without the UI prefix). If the board is private, set
 `PAPERCLIP_CHAT_WEBHOOK_PUBLIC_URL=https://chat-ingress.example.com` and forward
 only `POST /api/chat-webhooks/*` from that host. Provider signatures still gate
 ingress; this variable does not expose routes or grant provider access.

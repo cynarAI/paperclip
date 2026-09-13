@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Request } from "express";
-import { shouldServeViteDevHtml } from "../app.js";
+import { shouldServeViteDevHtml } from "../vite-dev-html-policy.js";
 
 function createRequest(path: string, acceptsResult: string | false): Request {
   return {
@@ -23,5 +23,10 @@ describe("shouldServeViteDevHtml", () => {
   it("skips vite asset requests", () => {
     expect(shouldServeViteDevHtml(createRequest("/@vite/client", "html"))).toBe(false);
     expect(shouldServeViteDevHtml(createRequest("/src/main.tsx", "html"))).toBe(false);
+  });
+
+  it("serves HTML for prefixed SPA routes when a UI base path is configured", () => {
+    expect(shouldServeViteDevHtml(createRequest("/board/invite", "html"), "/board")).toBe(true);
+    expect(shouldServeViteDevHtml(createRequest("/board/sw.js", "html"), "/board")).toBe(false);
   });
 });

@@ -220,7 +220,14 @@ function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: st
       value: publicUrl,
       source: publicUrlSource,
       required: false,
-      note: "Canonical public URL for auth/callback/invite origin wiring",
+      note: "Canonical public origin for auth/callback/invite wiring (no UI path prefix)",
+    },
+    {
+      key: "PAPERCLIP_UI_BASE_PATH",
+      value: process.env.PAPERCLIP_UI_BASE_PATH ?? "",
+      source: process.env.PAPERCLIP_UI_BASE_PATH ? "env" : "default",
+      required: false,
+      note: "Optional board SPA path prefix such as /board; set at UI build and server runtime",
     },
     {
       key: "BETTER_AUTH_TRUSTED_ORIGINS",

@@ -2,6 +2,7 @@ import * as React from "react";
 import * as RouterDom from "react-router-dom";
 import type { NavigateOptions, To } from "react-router-dom";
 import type { Issue } from "@paperclipai/shared";
+import { getUiRouterBasename } from "@/lib/ui-base-path";
 import { useCompany } from "@/context/CompanyContext";
 import { IssueLinkQuicklook } from "@/components/IssueLinkQuicklook";
 import {
@@ -56,6 +57,11 @@ export function useCaseHref(): (...segments: string[]) => string {
 }
 
 export * from "react-router-dom";
+
+export function PaperclipRouter({ children }: { children: React.ReactNode }) {
+  const basename = getUiRouterBasename();
+  return <RouterDom.BrowserRouter basename={basename}>{children}</RouterDom.BrowserRouter>;
+}
 
 type CompanyLinkProps = React.ComponentProps<typeof RouterDom.Link> & {
   disableIssueQuicklook?: boolean;
