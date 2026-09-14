@@ -77,6 +77,19 @@ describe("tenant-session recovery", () => {
   });
 });
 
+describe("API base path", () => {
+  it("prefixes requests with the configured UI base path", async () => {
+    vi.stubEnv("BASE_URL", "/board/");
+    fetchMock.mockResolvedValue(jsonResponse({ ok: true }));
+    await api.get("/companies");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/board/api/companies",
+      expect.objectContaining({ method: "GET" }),
+    );
+    vi.unstubAllEnvs();
+  });
+});
+
 describe("in-tab GET coalescing", () => {
   it("shares one underlying fetch for identical in-flight GETs", async () => {
     const d = deferred<Response>();

@@ -1,5 +1,6 @@
 import type { IssueAttachment, IssueDocumentSummary, IssueWorkProduct } from "@paperclipai/shared";
 import { getAttachmentArtifactWorkProductMetadata } from "@paperclipai/shared";
+import { resolveApiUrl } from "@/lib/api-base-path";
 
 /**
  * Selectors for the properties pane's Artifacts tab (PAP-491): which
@@ -66,7 +67,7 @@ export function workProductHref(
   if (!metadata) return null;
   for (const key of ["openPath", "url"]) {
     const value = metadata[key];
-    if (typeof value === "string" && value.trim().length > 0) return value;
+    if (typeof value === "string" && value.trim().length > 0) return resolveApiUrl(value);
   }
   return null;
 }

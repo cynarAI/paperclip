@@ -1,4 +1,5 @@
 import { checkMcpRemoteHeaderName, checkMcpRemoteHeaderValue, mcpRemoteHeaderRejectionMessage } from "@paperclipai/shared";
+import { joinApiPath } from "@/lib/api-base-path";
 import type { GenericMcpAuthMode } from "@paperclipai/shared";
 
 /**
@@ -43,7 +44,7 @@ export function endpointHost(url: string): string | null {
  * HTTP OAuth, so the setup form must advertise that same canonical spelling.
  */
 export function oauthCallbackUrlForBrowser(origin: string = window.location.origin): string {
-  const callbackUrl = new URL("/api/tools/oauth/callback", origin);
+  const callbackUrl = new URL(joinApiPath("/tools/oauth/callback"), origin);
   const hostname = callbackUrl.hostname.toLowerCase().replace(/^\[|\]$/g, "");
   if (
     callbackUrl.protocol === "http:"

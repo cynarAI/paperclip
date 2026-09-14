@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { accessApi } from "@/api/access";
 import { queryKeys } from "@/lib/queryKeys";
+import { joinApiPath } from "@/lib/api-base-path";
 import { buildAgentOnboardingPrompt } from "@/lib/agent-onboarding-prompt";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { Button } from "../ui/button";
@@ -40,7 +41,9 @@ export function ExternalAgentInviteDialog({ companyId, onClose, onBack }: {
         agentMessage: message.trim() || null,
       });
       void cache.invalidateQueries({ queryKey: queryKeys.access.invites(companyId, "all", 5) });
-      const path = invite.onboardingTextUrl ?? invite.onboardingTextPath ?? `/api/invites/${invite.token}/onboarding.txt`;
+      const path = invite.onboardingTextUrl
+        ?? invite.onboardingTextPath
+        ?? joinApiPath(`/invites/${invite.token}/onboarding.txt`);
       const onboardingTextUrl = new URL(path, window.location.origin).href;
       const manifest = await accessApi.getInviteOnboarding(invite.token).catch(() => null);
       return buildAgentOnboardingPrompt({

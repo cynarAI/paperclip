@@ -1,9 +1,6 @@
+import { getApiBasePath } from "@/lib/api-base-path";
 import { getPageVisibility, getVisibilityHeaderValue } from "@/lib/page-visibility";
 import { tenantSessionRecovery } from "@/lib/tenant-session-recovery";
-import { getUiBasePath } from "@/lib/ui-base-path";
-
-/** API root under the UI deploy prefix (e.g. /board/api) so shared-host /api can stay with another app. */
-const BASE = `${getUiBasePath()}/api`;
 
 export class ApiError extends Error {
   status: number;
@@ -52,7 +49,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
   applyObservabilityHeaders(headers);
 
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${getApiBasePath()}${path}`, {
     headers,
     credentials: "include",
     ...init,

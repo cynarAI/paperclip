@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { browserReachableHost, buildSameOriginWebSocketUrl } from "./websocket-url";
 
 describe("browserReachableHost", () => {
@@ -31,7 +31,12 @@ describe("browserReachableHost", () => {
 });
 
 describe("buildSameOriginWebSocketUrl", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("uses wss for https pages", () => {
+    vi.stubEnv("BASE_URL", "/");
     expect(buildSameOriginWebSocketUrl("/api/events/ws", {
       protocol: "https:",
       hostname: "example.com",
@@ -40,7 +45,18 @@ describe("buildSameOriginWebSocketUrl", () => {
     })).toBe("wss://example.com/api/events/ws");
   });
 
+  it("prefixes API websocket paths with the configured UI base path", () => {
+    vi.stubEnv("BASE_URL", "/board/");
+    expect(buildSameOriginWebSocketUrl("/api/companies/c1/events/ws", {
+      protocol: "https:",
+      hostname: "example.com",
+      host: "example.com",
+      port: "",
+    })).toBe("wss://example.com/board/api/companies/c1/events/ws");
+  });
+
   it("does not emit 0.0.0.0 websocket URLs", () => {
+    vi.stubEnv("BASE_URL", "/");
     expect(buildSameOriginWebSocketUrl("api/events/ws", {
       protocol: "http:",
       hostname: "0.0.0.0",

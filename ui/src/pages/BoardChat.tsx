@@ -7,6 +7,7 @@ import {
   useMemo,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { joinApiPath } from "@/lib/api-base-path";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useDialogState } from "../context/DialogContext";
@@ -560,7 +561,7 @@ export function BoardChat() {
       try {
         const controller = new AbortController();
         const fetchTimeout = setTimeout(() => controller.abort(), 130000);
-        const res = await fetch("/api/board/chat/stream", {
+        const res = await fetch(joinApiPath("/board/chat/stream"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

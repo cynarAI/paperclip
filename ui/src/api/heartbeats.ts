@@ -6,6 +6,7 @@ import type {
   ProviderTraceFrame,
   ProviderTraceMetadata,
 } from "@paperclipai/shared";
+import { joinApiPath } from "@/lib/api-base-path";
 import { tenantSessionRecovery } from "@/lib/tenant-session-recovery";
 import { api, type RequestOptions } from "./client";
 
@@ -165,7 +166,7 @@ export const heartbeatsApi = {
     api.delete<{ ok: true }>(`/heartbeat-runs/${runId}/provider-trace`),
   downloadProviderTrace: async (runId: string): Promise<Blob> => {
     const response = await fetch(
-      `/api/heartbeat-runs/${runId}/provider-trace/download`,
+      joinApiPath(`/heartbeat-runs/${runId}/provider-trace/download`),
       {
         credentials: "include",
         headers: { Accept: "application/x-ndjson" },

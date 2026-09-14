@@ -1,3 +1,4 @@
+import { joinApiPath } from "@/lib/api-base-path";
 import { TaskChatProjectCreatedCard } from "@/components/task-chat/TaskChatProjectCreatedCard";
 import { TaskDetailTasksPanel } from "@/components/task-detail/TaskDetailTasksPanel";
 import { AiConnectionDesignExamples } from "@/components/ai-connections/AiConnectionDesignExamples";
@@ -195,7 +196,7 @@ function sampleOutput(
   filename: string,
   opts: { byteSize: number; isPrimary?: boolean; createdAt: string },
 ): IssueWorkProduct {
-  const contentPath = `/api/attachments/${attachmentId}/content`;
+  const contentPath = joinApiPath(`/attachments/${attachmentId}/content`);
   return {
     id,
     companyId: "demo-company",

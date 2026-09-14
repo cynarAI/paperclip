@@ -66,8 +66,19 @@ so either proxy style works:
 - **Prefix stripped:** forward `/board/*` to `/*` on the Paperclip port; asset
   requests still arrive as `/board/assets/...` from the browser.
 
-The API remains at `/api` on the same origin. Configure your proxy to forward
-`/api` (and `/board/api` if you terminate both on one host) to Paperclip.
+The Paperclip API is always reached through the configured UI prefix:
+`/api` at root deploy, or `/board/api` when `PAPERCLIP_UI_BASE_PATH=/board`.
+The UI client, auth forms, downloads, and websocket/EventSource helpers all
+derive that mount from Vite `BASE_URL` (set at UI build time from
+`PAPERCLIP_UI_BASE_PATH`).
+
+On hosts where another service already owns origin-root `/api` (for example
+Tailscale **grok-local** on evo), terminate Paperclip at **`/board/api`**
+only and leave `/api` on the existing service. Example nginx intent:
+
+- `/board/` → Paperclip UI
+- `/board/api/` → Paperclip API (same upstream as the UI)
+- `/api/` → grok-local (unchanged)
 
 **Evo smoke:** after Better Auth login with `PAPERCLIP_UI_BASE_PATH=/board`, confirm
 the browser lands on `/board/<issuePrefix>/dashboard` (for example

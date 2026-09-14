@@ -1,3 +1,5 @@
+import { joinApiPath } from "./api-base-path";
+
 type BrowserLocationLike = Pick<Location, "host" | "hostname" | "port" | "protocol">;
 
 function isWildcardHost(hostname: string): boolean {
@@ -16,5 +18,9 @@ export function buildSameOriginWebSocketUrl(
 ): string {
   const protocol = location.protocol === "https:" ? "wss" : "ws";
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${protocol}://${browserReachableHost(location)}${normalizedPath}`;
+  const resolvedPath =
+    normalizedPath === "/api" || normalizedPath.startsWith("/api/")
+      ? joinApiPath(normalizedPath)
+      : normalizedPath;
+  return `${protocol}://${browserReachableHost(location)}${resolvedPath}`;
 }
