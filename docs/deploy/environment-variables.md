@@ -71,10 +71,12 @@ The API remains at `/api` on the same origin. Configure your proxy to forward
 
 **Evo smoke:** after Better Auth login with `PAPERCLIP_UI_BASE_PATH=/board`, confirm
 the browser lands on `/board/` or `/board/<company>/dashboard`, never
-`/board/board/`. Post-login `next` values may be router-relative (`/`) or
-deploy-absolute (`/board/`); both must resolve to the same destination. Also
-confirm the first path segment `board` is never treated as a company slug when
-it is the configured UI base (dashboard should load, not "Company not found").
+`/board/board/` or `/board/dashboard` (unprefixed dashboard is not a company
+slug). Post-login `next` values may be router-relative (`/`) or deploy-absolute
+(`/board/`); bare `/dashboard` targets normalize to `/` so
+`CompanyRootRedirect` picks the active company prefix. Also confirm the first
+path segment `board` is never treated as a company slug when it is the
+configured UI base (dashboard should load, not "Company not found").
 
 ### Webhook-only chat ingress
 

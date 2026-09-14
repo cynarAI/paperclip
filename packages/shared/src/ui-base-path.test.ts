@@ -40,9 +40,11 @@ describe("ui base path helpers", () => {
 
   it("normalizes auth next paths for basename-aware navigation", () => {
     expect(normalizeAuthNextPath("/board/", "/board")).toBe("/");
-    expect(normalizeAuthNextPath("/board/dashboard", "/board")).toBe("/dashboard");
-    expect(normalizeAuthNextPath("/dashboard", "/board")).toBe("/dashboard");
-    expect(normalizeAuthNextPath("/board/dashboard?tab=1", "/board")).toBe("/dashboard?tab=1");
+    expect(normalizeAuthNextPath("/board/dashboard", "/board")).toBe("/");
+    expect(normalizeAuthNextPath("/dashboard", "/board")).toBe("/");
+    expect(normalizeAuthNextPath("/dashboard/live", "/board")).toBe("/");
+    expect(normalizeAuthNextPath("/board/dashboard?tab=1", "/board")).toBe("/");
+    expect(normalizeAuthNextPath("/PAP/dashboard", "/board")).toBe("/PAP/dashboard");
     expect(normalizeAuthNextPath("/board/", "")).toBe("/board/");
     expect(normalizeAuthNextPath(undefined, "/board")).toBe("/");
     expect(normalizeAuthNextPath("//evil.example", "/board")).toBe("/");
@@ -50,9 +52,10 @@ describe("ui base path helpers", () => {
 
   it("resolves auth redirect locations for HTTP navigation under a UI prefix", () => {
     expect(resolveAuthRedirectLocation("/", "/board")).toBe("/board/");
-    expect(resolveAuthRedirectLocation("/dashboard", "/board")).toBe("/board/dashboard");
-    expect(resolveAuthRedirectLocation("/board/dashboard", "/board")).toBe("/board/dashboard");
+    expect(resolveAuthRedirectLocation("/dashboard", "/board")).toBe("/board/");
+    expect(resolveAuthRedirectLocation("/board/dashboard", "/board")).toBe("/board/");
+    expect(resolveAuthRedirectLocation("/PAP/dashboard", "/board")).toBe("/board/PAP/dashboard");
     expect(resolveAuthRedirectLocation("/auth", "/board")).toBe("/board/auth");
-    expect(resolveAuthRedirectLocation("/dashboard", "")).toBe("/dashboard");
+    expect(resolveAuthRedirectLocation("/dashboard", "")).toBe("/");
   });
 });
