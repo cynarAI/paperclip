@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   joinUiBasePath,
+  normalizeAuthNextPath,
   normalizeUiBasePath,
   normalizeUiRouterBasename,
   normalizeUiViteBase,
+  resolveAuthRedirectLocation,
   stripUiBasePath,
 } from "./ui-base-path.js";
 
@@ -34,5 +36,23 @@ describe("ui base path helpers", () => {
     expect(joinUiBasePath("/board", "/auth")).toBe("/board/auth");
     expect(joinUiBasePath("", "/auth")).toBe("/auth");
     expect(joinUiBasePath("/board", "/")).toBe("/board/");
+  });
+
+  it("normalizes auth next paths for basename-aware navigation", () => {
+    expect(normalizeAuthNextPath("/board/", "/board")).toBe("/");
+    expect(normalizeAuthNextPath("/board/dashboard", "/board")).toBe("/dashboard");
+    expect(normalizeAuthNextPath("/dashboard", "/board")).toBe("/dashboard");
+    expect(normalizeAuthNextPath("/board/dashboard?tab=1", "/board")).toBe("/dashboard?tab=1");
+    expect(normalizeAuthNextPath("/board/", "")).toBe("/board/");
+    expect(normalizeAuthNextPath(undefined, "/board")).toBe("/");
+    expect(normalizeAuthNextPath("//evil.example", "/board")).toBe("/");
+  });
+
+  it("resolves auth redirect locations for HTTP navigation under a UI prefix", () => {
+    expect(resolveAuthRedirectLocation("/", "/board")).toBe("/board/");
+    expect(resolveAuthRedirectLocation("/dashboard", "/board")).toBe("/board/dashboard");
+    expect(resolveAuthRedirectLocation("/board/dashboard", "/board")).toBe("/board/dashboard");
+    expect(resolveAuthRedirectLocation("/auth", "/board")).toBe("/board/auth");
+    expect(resolveAuthRedirectLocation("/dashboard", "")).toBe("/dashboard");
   });
 });

@@ -39,3 +39,42 @@ export function joinUiBasePath(basePath: string | undefined | null, path: string
   if (normalizedPath === "/") return `${base}/`;
   return `${base}${normalizedPath}`;
 }
+
+function splitAuthNextPath(value: string): { pathname: string; search: string; hash: string } {
+  const match = value.match(/^([^?#]*)(\?[^#]*)?(#.*)?$/);
+  return {
+    pathname: match?.[1] ?? value,
+    search: match?.[2] ?? "",
+    hash: match?.[3] ?? "",
+  };
+}
+
+/**
+ * Normalize a post-login `next` target for React Router navigation.
+ *
+ * Callers may pass either router-relative paths (`/dashboard`) or deploy-absolute
+ * paths that already include the UI prefix (`/board/dashboard`). The configured
+ * prefix is stripped when present so a basename-aware router does not double-prefix.
+ */
+export function normalizeAuthNextPath(value: string | null | undefined, basePath?: string | null): string {
+  const trimmed = value?.trim();
+  if (!trimmed) return "/";
+  if (!trimmed.startsWith("/")) return "/";
+  // `//host` and `/\host` are both browser-recognized protocol-relative forms.
+  if (trimmed.startsWith("//") || trimmed.startsWith("/\\")) return "/";
+  // Control characters and raw whitespace can split a `Location` header.
+  if (/[\u0000-\u0020\u007f]/.test(trimmed)) return "/";
+
+  const { pathname, search, hash } = splitAuthNextPath(trimmed);
+  const normalizedPathname = stripUiBasePath(pathname, basePath);
+  return `${normalizedPathname}${search}${hash}`;
+}
+
+/**
+ * Resolve an auth redirect for HTTP `Location` headers (full browser navigation).
+ * Router-relative paths are prefixed with the configured UI base path.
+ */
+export function resolveAuthRedirectLocation(value: string, basePath?: string | null): string {
+  const normalized = normalizeAuthNextPath(value, basePath);
+  return joinUiBasePath(basePath, normalized);
+}

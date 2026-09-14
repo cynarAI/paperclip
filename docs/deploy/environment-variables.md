@@ -69,6 +69,11 @@ so either proxy style works:
 The API remains at `/api` on the same origin. Configure your proxy to forward
 `/api` (and `/board/api` if you terminate both on one host) to Paperclip.
 
+**Evo smoke:** after Better Auth login with `PAPERCLIP_UI_BASE_PATH=/board`, confirm
+the browser lands on `/board/` or `/board/<company>/dashboard`, never
+`/board/board/`. Post-login `next` values may be router-relative (`/`) or
+deploy-absolute (`/board/`); both must resolve to the same destination.
+
 ### Webhook-only chat ingress
 
 Keep `PAPERCLIP_PUBLIC_URL` (or the explicit authentication public URL) pointed

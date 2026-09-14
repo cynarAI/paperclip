@@ -215,6 +215,38 @@ describe("AuthPage", () => {
     });
   });
 
+  it("navigates to a router-relative path when next already includes the UI base prefix", async () => {
+    vi.stubEnv("BASE_URL", "/board/");
+    getSessionMock.mockResolvedValue({
+      session: { id: "session-1", userId: "user-1" },
+      user: { id: "user-1", email: "jane@example.com", name: "Jane" },
+    });
+
+    const { root } = renderAuthPage(container);
+    await act(async () => {
+      root.render(
+        <MemoryRouter basename="/board" initialEntries={["/board/auth?next=%2Fboard%2F"]}>
+          <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+            <Routes>
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/" element={<div data-testid="home">Home</div>} />
+              <Route path="*" element={<div data-testid="missing">Not found</div>} />
+            </Routes>
+          </QueryClientProvider>
+        </MemoryRouter>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    expect(container.querySelector('[data-testid="home"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="missing"]')).toBeNull();
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("invalidates anonymous health metadata after sign-in", async () => {
     const { root, queryClient } = await mount();
     queryClient.setQueryData(queryKeys.health, {

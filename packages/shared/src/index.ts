@@ -2765,8 +2765,10 @@ export * from "./types/email.js";
 export * from "./validators/email.js";
 export {
   joinUiBasePath,
+  normalizeAuthNextPath,
   normalizeUiBasePath,
   normalizeUiRouterBasename,
   normalizeUiViteBase,
+  resolveAuthRedirectLocation,
   stripUiBasePath,
 } from "./ui-base-path.js";

@@ -289,6 +289,7 @@ export function createBetterAuthInstance(db: Db, config: Config, trustedOrigins:
           plugins: [
             workspaceLoginHandoffPlugin({
               db,
+              uiBasePath: config.uiBasePath,
               // Re-resolved per exchange so a hot restart cannot keep validating
               // against an origin the control plane has since republished.
               resolveExpectedIdentity: () =>
