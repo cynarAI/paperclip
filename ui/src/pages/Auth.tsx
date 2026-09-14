@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "@/lib/router";
 import { authApi } from "../api/auth";
 import { queryKeys } from "../lib/queryKeys";
+import { joinApiPath } from "@/lib/api-base-path";
 import { resolveAuthNextPath } from "../lib/auth-redirect";
 import { getRememberedInvitePath } from "../lib/invite-memory";
 import { Button } from "@/components/ui/button";
@@ -105,7 +106,7 @@ export function AuthPage() {
           <form
             className="mt-6 space-y-4"
             method="post"
-            action={mode === "sign_up" ? "/api/auth/sign-up/email" : "/api/auth/sign-in/email"}
+            action={mode === "sign_up" ? joinApiPath("/auth/sign-up/email") : joinApiPath("/auth/sign-in/email")}
             onSubmit={(event) => {
               event.preventDefault();
               if (mutation.isPending) return;

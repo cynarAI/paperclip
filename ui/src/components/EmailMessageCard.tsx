@@ -6,6 +6,7 @@ import type {
   EmailPublicationSummary,
   EmailThreadSummary,
 } from "@paperclipai/shared";
+import { joinApiPath } from "@/lib/api-base-path";
 import { emailApi } from "@/api/email";
 import { issuesApi } from "@/api/issues";
 import { useChatConnectorsEnabled } from "@/hooks/useChatConnectorsEnabled";
@@ -104,7 +105,7 @@ export function EmailMessageCard({
             return (
               <a
                 key={id}
-                href={`/api/attachments/${id}/content`}
+                href={joinApiPath(`/attachments/${id}/content`)}
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs"

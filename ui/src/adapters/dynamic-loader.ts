@@ -1,3 +1,5 @@
+import { joinApiPath } from "@/lib/api-base-path";
+
 /**
  * Dynamic UI parser loading for external adapters — sandboxed execution.
  *
@@ -229,7 +231,7 @@ export async function loadDynamicParser(adapterType: string): Promise<DynamicPar
 
   const loadPromise = (async (): Promise<DynamicParserModule | null> => {
     try {
-      const response = await fetch(`/api/adapters/${encodeURIComponent(adapterType)}/ui-parser.js`);
+      const response = await fetch(joinApiPath(`/adapters/${encodeURIComponent(adapterType)}/ui-parser.js`));
       if (!response.ok) {
         failedLoads.add(adapterType);
         return null;

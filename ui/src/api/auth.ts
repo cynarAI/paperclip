@@ -5,9 +5,9 @@ import {
   type CurrentUserProfile,
   type UpdateCurrentUserProfile,
 } from "@paperclipai/shared";
+import { joinApiPath } from "@/lib/api-base-path";
 import { redactUrlSecrets } from "@/lib/redact-url-secrets";
 import { tenantSessionRecovery } from "@/lib/tenant-session-recovery";
-import { getUiBasePath } from "@/lib/ui-base-path";
 
 type AuthErrorBody =
   | {
@@ -73,7 +73,7 @@ function extractAuthError(payload: AuthErrorBody, status: number) {
 // HTTP response, so they are indistinguishable from a bad password in the UI
 // unless we log the resolved request URL + origin here. See PAP-13466.
 function resolveAuthUrl(path: string) {
-  const relative = `${getUiBasePath()}/api/auth${path}`;
+  const relative = joinApiPath(`/auth${path}`);
   try {
     return new URL(relative, window.location.origin).href;
   } catch {
@@ -115,7 +115,7 @@ function logAuthHttpError(method: string, path: string, status: number, statusTe
 async function authPost(path: string, body: Record<string, unknown>): Promise<unknown> {
   let res: Response;
   try {
-    res = await fetch(`${getUiBasePath()}/api/auth${path}`, {
+    res = await fetch(joinApiPath(`/auth${path}`), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -136,7 +136,7 @@ async function authPost(path: string, body: Record<string, unknown>): Promise<un
 }
 
 async function authPatch<T>(path: string, body: Record<string, unknown>, parse: (value: unknown) => T): Promise<T> {
-  const res = await fetch(`${getUiBasePath()}/api/auth${path}`, {
+  const res = await fetch(joinApiPath(`/auth${path}`), {
     method: "PATCH",
     credentials: "include",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -153,7 +153,7 @@ async function authPatch<T>(path: string, body: Record<string, unknown>, parse: 
 
 export const authApi = {
   getSession: async (): Promise<AuthSession | null> => {
-    const res = await fetch(`${getUiBasePath()}/api/auth/get-session`, {
+    const res = await fetch(joinApiPath("/auth/get-session"), {
       credentials: "include",
       headers: { Accept: "application/json" },
     });
@@ -179,7 +179,7 @@ export const authApi = {
   },
 
   getProfile: async (): Promise<CurrentUserProfile> => {
-    const res = await fetch(`${getUiBasePath()}/api/auth/profile`, {
+    const res = await fetch(joinApiPath("/auth/profile"), {
       credentials: "include",
       headers: { Accept: "application/json" },
     });

@@ -1,4 +1,5 @@
 import type { DocumentRevision, IssueDocument, IssueLabel } from "@paperclipai/shared";
+import { joinApiPath } from "@/lib/api-base-path";
 import { api } from "./client";
 
 // -----------------------------------------------------------------------------
@@ -109,7 +110,7 @@ export interface CaseParentRef {
 
 /** Content URL for an attachment's asset (served by the assets route). */
 export function caseAttachmentUrl(attachment: CaseAttachmentRef): string {
-  return `/api/assets/${attachment.asset.id}/content`;
+  return joinApiPath(`/assets/${attachment.asset.id}/content`);
 }
 
 export function isImageAttachment(attachment: CaseAttachmentRef): boolean {

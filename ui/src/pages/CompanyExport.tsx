@@ -8,6 +8,7 @@ import type {
   CompanyPortabilityManifest,
   Project,
 } from "@paperclipai/shared";
+import { joinApiPath } from "@/lib/api-base-path";
 import { useNavigate, useLocation } from "@/lib/router";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
@@ -1233,7 +1234,7 @@ export function CompanyExport() {
             selectedFile={selectedFile}
             content={previewContent}
             allFiles={effectiveFiles}
-            orgChartPreviewUrl={`/api/companies/${encodeURIComponent(selectedCompanyId)}/org.svg`}
+            orgChartPreviewUrl={joinApiPath(`/companies/${encodeURIComponent(selectedCompanyId)}/org.svg`)}
             onSkillClick={handleSkillClick}
           />
           {exportPreviewMutation.isPending ? (

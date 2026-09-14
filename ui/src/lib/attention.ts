@@ -1,3 +1,4 @@
+import { joinApiPath } from "@/lib/api-base-path";
 import type {
   AttentionDetailImage,
   AttentionFeed,
@@ -260,7 +261,7 @@ export function attentionDetailImages(item: AttentionItem): AttentionDetailImage
  */
 export function attentionImageUrl(assetId: string): string {
   if (assetId.startsWith("data:") || assetId.startsWith("http")) return assetId;
-  return `/api/assets/${assetId}/content`;
+  return joinApiPath(`/assets/${assetId}/content`);
 }
 
 /**
