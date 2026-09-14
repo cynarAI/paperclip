@@ -56,6 +56,11 @@ function splitAuthNextPath(value: string): { pathname: string; search: string; h
  * paths that already include the UI prefix (`/board/dashboard`). The configured
  * prefix is stripped when present so a basename-aware router does not double-prefix.
  */
+function isUnprefixedDashboardPath(pathname: string): boolean {
+  const root = pathname.split("/").filter(Boolean)[0];
+  return root?.toLowerCase() === "dashboard";
+}
+
 export function normalizeAuthNextPath(value: string | null | undefined, basePath?: string | null): string {
   const trimmed = value?.trim();
   if (!trimmed) return "/";
@@ -67,6 +72,10 @@ export function normalizeAuthNextPath(value: string | null | undefined, basePath
 
   const { pathname, search, hash } = splitAuthNextPath(trimmed);
   const normalizedPathname = stripUiBasePath(pathname, basePath);
+  // Bare `/dashboard` (and `/dashboard/live`) are unprefixed board routes. Send
+  // post-login navigation to `/` so CompanyRootRedirect picks the active company
+  // prefix instead of landing on a route that `:companyPrefix` would misread.
+  if (isUnprefixedDashboardPath(normalizedPathname)) return "/";
   return `${normalizedPathname}${search}${hash}`;
 }
 
@@ -78,3 +87,4 @@ export function resolveAuthRedirectLocation(value: string, basePath?: string | n
   const normalized = normalizeAuthNextPath(value, basePath);
   return joinUiBasePath(basePath, normalized);
 }
+
