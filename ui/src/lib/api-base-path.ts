@@ -6,12 +6,27 @@ export function getApiBasePath(): string {
   return joinUiBasePath(getUiBasePath(), "/api");
 }
 
+function stripApiMount(path: string): string {
+  const base = getApiBasePath();
+  if (base && (path === base || path.startsWith(`${base}/`))) {
+    return path.slice(base.length) || "/";
+  }
+  const ui = getUiBasePath();
+  // Defend against double UI prefix: /board/board/api/... → /api/...
+  if (ui && path.startsWith(`${ui}${ui}/`)) {
+    return path.slice(ui.length);
+  }
+  return path;
+}
+
 /**
  * Prefix a path with the configured API mount.
- * Accepts `/companies`, `/health`, or deploy-absolute `/api/...` inputs.
+ * Accepts `/companies`, `/health`, `/api/...`, or already-prefixed `/board/api/...`.
+ * Idempotent — never produces `/board/board/api`.
  */
 export function joinApiPath(path: string): string {
-  const normalized = path.startsWith("/") ? path : `/${path}`;
+  let normalized = path.startsWith("/") ? path : `/${path}`;
+  normalized = stripApiMount(normalized);
   if (normalized === "/api" || normalized.startsWith("/api/")) {
     return joinUiBasePath(getUiBasePath(), normalized);
   }
@@ -22,7 +37,12 @@ export function joinApiPath(path: string): string {
 export function resolveApiUrl(pathOrUrl: string): string {
   const trimmed = pathOrUrl.trim();
   if (!trimmed.startsWith("/")) return trimmed;
-  if (trimmed === "/api" || trimmed.startsWith("/api/")) {
+  if (
+    trimmed === "/api" ||
+    trimmed.startsWith("/api/") ||
+    trimmed.startsWith(`${getApiBasePath()}/`) ||
+    trimmed === getApiBasePath()
+  ) {
     return joinApiPath(trimmed);
   }
   return trimmed;
