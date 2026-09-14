@@ -4,6 +4,7 @@ import { accessApi } from "@/api/access";
 import { ApiError } from "@/api/client";
 import { authApi } from "@/api/auth";
 import { healthApi } from "@/api/health";
+import { buildAuthNextLink } from "@/lib/auth-redirect";
 import { queryKeys } from "@/lib/queryKeys";
 import { BootstrapPendingPage } from "@/components/BootstrapPendingPage";
 import { PaperclipLoading } from "@/components/AnimatedPaperclipIcon";
@@ -113,8 +114,7 @@ export function CloudAccessGate() {
   }
 
   if (isAuthenticatedMode && !sessionQuery.data) {
-    const next = encodeURIComponent(`${location.pathname}${location.search}`);
-    return <Navigate to={`/auth?next=${next}`} replace />;
+    return <Navigate to={buildAuthNextLink(`${location.pathname}${location.search}`)} replace />;
   }
 
   if (

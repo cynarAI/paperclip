@@ -66,6 +66,7 @@ function createApp(input: {
   expectedExecutionWorkspaceId?: string | null;
   expectedCompanyId?: string | null;
   key?: string | null;
+  uiBasePath?: string | null;
 }) {
   const store: MemoryStore = { user: [], session: [], account: [], verification: [] };
   store.user!.push({
@@ -87,6 +88,7 @@ function createApp(input: {
     plugins: [
       workspaceLoginHandoffPlugin({
         db: stubDb(input.activeMembershipCount ?? 1),
+        uiBasePath: input.uiBasePath,
         resolveExpectedIdentity: () => ({
           key: input.key === undefined ? KEY : input.key,
           instanceId: input.expectedInstanceId === undefined ? INSTANCE_ID : input.expectedInstanceId,
@@ -169,6 +171,17 @@ describe("GET /api/auth/workspace-handoff/exchange", () => {
     expect(replay.headers.location).toContain("workspaceHandoffError=replayed");
     expect(sessionCookies(replay)).toHaveLength(0);
     expect(store.session).toHaveLength(1);
+  });
+
+  it("prefixes HTTP redirects and strips deploy-absolute next paths under a UI base path", async () => {
+    const { app } = createApp({ uiBasePath: "/board" });
+    const success = await exchange(app, mintTicket({ next: "/board/dashboard" }));
+    expect(success.headers.location).toBe(`${ORIGIN}/board/dashboard`);
+
+    const fallback = await exchange(app, mintTicket({ next: "/board/", now: new Date(Date.now() - 10 * 60_000), ttlSeconds: 30 }));
+    const location = new URL(fallback.headers.location as string);
+    expect(location.pathname).toBe("/board/auth");
+    expect(location.searchParams.get("next")).toBe("/");
   });
 
   it("sends a rejected ticket to the labeled credential fallback with no session", async () => {

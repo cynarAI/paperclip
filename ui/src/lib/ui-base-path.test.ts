@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   getUiBasePath,
+  getUiBasePathSegment,
   getUiRouterBasename,
   stripUiBasePath,
 } from "./ui-base-path";
@@ -21,9 +22,11 @@ describe("ui base path runtime config", () => {
   it("reads subdirectory deploy settings from Vite base", () => {
     vi.stubEnv("BASE_URL", "/board/");
     expect(getUiBasePath()).toBe("/board");
+    expect(getUiBasePathSegment()).toBe("board");
     expect(getUiRouterBasename()).toBe("/board");
     expect(stripUiBasePath("/board/invite")).toBe("/invite");
     expect(stripUiBasePath("/invite")).toBe("/invite");
+    expect(stripUiBasePath("/board/board/dashboard")).toBe("/dashboard");
   });
 
   it("exports PaperclipRouter for basename-aware BrowserRouter wiring", () => {

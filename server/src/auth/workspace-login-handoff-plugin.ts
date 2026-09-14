@@ -17,6 +17,11 @@ import { createAuthEndpoint } from "better-auth/api";
 import type { Session, User } from "better-auth/types";
 import type { Db } from "@paperclipai/db";
 import { companyMemberships } from "@paperclipai/db";
+import {
+  joinUiBasePath,
+  normalizeAuthNextPath,
+  resolveAuthRedirectLocation,
+} from "@paperclipai/shared";
 import { logger } from "../middleware/logger.js";
 import {
   exchangeWorkspaceHandoffTicket,
@@ -74,17 +79,20 @@ type WorkspaceHandoffEndpointContext = {
 /** Where a rejected ticket lands the browser: the labeled snapshot-local fallback. */
 function buildFallbackRedirect(input: {
   baseUrl: string | undefined;
+  uiBasePath?: string | null;
   next: string;
   reason: WorkspaceHandoffExchangeFailureReason;
 }): string {
-  const target = new URL("/auth", input.baseUrl ?? "http://localhost");
-  target.searchParams.set("next", input.next);
+  const authPath = joinUiBasePath(input.uiBasePath, "/auth");
+  const target = new URL(authPath, input.baseUrl ?? "http://localhost");
+  target.searchParams.set("next", normalizeAuthNextPath(input.next, input.uiBasePath));
   target.searchParams.set("workspaceHandoffError", input.reason);
   return input.baseUrl ? target.toString() : `${target.pathname}${target.search}`;
 }
 
 export function workspaceLoginHandoffPlugin(deps: {
   db: Db;
+  uiBasePath?: string | null;
   resolveExpectedIdentity: () => WorkspaceHandoffExpectedIdentity;
 }) {
   return {
@@ -192,6 +200,7 @@ export function workspaceLoginHandoffPlugin(deps: {
             throw ctx.redirect(
               buildFallbackRedirect({
                 baseUrl: expected.origin ?? undefined,
+                uiBasePath: deps.uiBasePath,
                 next: result.payload?.next ?? "/",
                 reason: result.reason,
               }),
@@ -210,10 +219,11 @@ export function workspaceLoginHandoffPlugin(deps: {
           );
           // An HTTP redirect (not a client-side navigation) is what keeps the
           // ticket URL out of the browser's session history.
+          const redirectLocation = resolveAuthRedirectLocation(result.redirectTo, deps.uiBasePath);
           throw ctx.redirect(
             expected.origin
-              ? new URL(result.redirectTo, expected.origin).toString()
-              : result.redirectTo,
+              ? new URL(redirectLocation, expected.origin).toString()
+              : redirectLocation,
           );
         },
       ),
