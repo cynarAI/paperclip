@@ -40,14 +40,59 @@ vi.hoisted(() => {
   }
 });
 
+const AIS_COMPANY = {
+  id: "company-ais",
+  name: "AIstronaut",
+  issuePrefix: "AIS",
+  status: "active",
+};
+
+const PAP_COMPANY = {
+  id: "company-1",
+  name: "Paperclip",
+  issuePrefix: "PAP",
+  status: "active",
+};
+
+let companyState = {
+  companies: [AIS_COMPANY] as Array<typeof AIS_COMPANY>,
+  selected: AIS_COMPANY as typeof AIS_COMPANY | null,
+};
+
 vi.mock("./components/Layout", async () => {
-  const { Outlet } = await import("react-router-dom");
-  return { Layout: () => <Outlet /> };
+  const reactRouterDom = await import("react-router-dom");
+  return {
+    Layout: () => {
+      const { companyPrefix } = reactRouterDom.useParams();
+      const matched = companyState.companies.find(
+        (company) => company.issuePrefix.toUpperCase() === companyPrefix?.toUpperCase(),
+      );
+      const hasUnknownCompanyPrefix =
+        Boolean(companyPrefix) && companyState.companies.length > 0 && !matched;
+      if (hasUnknownCompanyPrefix) {
+        return <div>{`NOT_FOUND:invalid_company_prefix:${companyPrefix}`}</div>;
+      }
+      return <reactRouterDom.Outlet />;
+    },
+  };
 });
 
 vi.mock("./components/Layout.production", async () => {
-  const { Outlet } = await import("react-router-dom");
-  return { Layout: () => <Outlet /> };
+  const reactRouterDom = await import("react-router-dom");
+  return {
+    Layout: () => {
+      const { companyPrefix } = reactRouterDom.useParams();
+      const matched = companyState.companies.find(
+        (company) => company.issuePrefix.toUpperCase() === companyPrefix?.toUpperCase(),
+      );
+      const hasUnknownCompanyPrefix =
+        Boolean(companyPrefix) && companyState.companies.length > 0 && !matched;
+      if (hasUnknownCompanyPrefix) {
+        return <div>{`NOT_FOUND:invalid_company_prefix:${companyPrefix}`}</div>;
+      }
+      return <reactRouterDom.Outlet />;
+    },
+  };
 });
 
 vi.mock("./components/OnboardingWizardVariant", () => ({
@@ -77,18 +122,6 @@ vi.mock("./pages/NotFound", () => ({
   NotFoundPage: ({ scope }: { scope: string }) => <div>{`NOT_FOUND:${scope}`}</div>,
 }));
 
-const PAP_COMPANY = {
-  id: "company-1",
-  name: "Paperclip",
-  issuePrefix: "PAP",
-  status: "active",
-};
-
-let companyState = {
-  companies: [PAP_COMPANY] as Array<typeof PAP_COMPANY>,
-  selected: PAP_COMPANY as typeof PAP_COMPANY | null,
-};
-
 vi.mock("./context/CompanyContext", () => ({
   useCompany: () => ({
     companies: companyState.companies,
@@ -99,11 +132,19 @@ vi.mock("./context/CompanyContext", () => ({
   CompanyProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
 
+/** Map router-relative paths to MemoryRouter entries (basename requires deploy-absolute URLs). */
+function toMemoryRouterEntry(path: string, basename?: string): string {
+  if (!basename) return path;
+  if (path === basename || path.startsWith(`${basename}/`)) return path;
+  if (path === "/") return `${basename}/`;
+  return `${basename}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 function renderAppAt(container: HTMLElement, path: string, basename?: string) {
   const root = createRoot(container);
   flushSync(() => {
     root.render(
-      <MemoryRouter basename={basename} initialEntries={[path]}>
+      <MemoryRouter basename={basename} initialEntries={[toMemoryRouterEntry(path, basename)]}>
         <App />
       </MemoryRouter>,
     );
@@ -149,10 +190,74 @@ describe("App dashboard routing under UI base path", () => {
 
   it("does not treat /dashboard as companyPrefix=dashboard under basename /board", async () => {
     vi.stubEnv("BASE_URL", "/board/");
-    const root = renderAppAt(container, "/board/dashboard", "/board");
+    const root = renderAppAt(container, "/dashboard", "/board");
     await waitForRoute(container, "DASHBOARD_PAGE@/PAP/dashboard");
     expect(container.textContent).not.toContain("NOT_FOUND");
-    expect(container.textContent).not.toContain("NOT_FOUND:company");
+    expect(container.textContent).not.toContain("invalid_company_prefix");
+    flushSync(() => root.unmount());
+  });
+});
+
+describe("App board basename routing (AIS company)", () => {
+  let container: HTMLDivElement;
+
+  beforeEach(() => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    companyState = { companies: [AIS_COMPANY], selected: AIS_COMPANY };
+    streamlinedUiState.enabled = true;
+    streamlinedUiState.loaded = true;
+    vi.stubEnv("BASE_URL", "/board/");
+  });
+
+  afterEach(() => {
+    container.remove();
+    document.body.innerHTML = "";
+    vi.clearAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  it("redirects / to /AIS/dashboard under basename /board", async () => {
+    const root = renderAppAt(container, "/", "/board");
+    await waitForRoute(container, "DASHBOARD_PAGE@/AIS/dashboard");
+    expect(container.textContent).not.toContain("NOT_FOUND:invalid_company_prefix");
+    flushSync(() => root.unmount());
+  });
+
+  it("renders /AIS/dashboard without invalid_company_prefix", async () => {
+    const root = renderAppAt(container, "/AIS/dashboard", "/board");
+    await waitForRoute(container, "DASHBOARD_PAGE@/AIS/dashboard");
+    expect(container.textContent).not.toContain("NOT_FOUND:invalid_company_prefix");
+    expect(container.textContent).not.toContain("NOT_FOUND:invalid_company_prefix:board");
+    flushSync(() => root.unmount());
+  });
+
+  it("redirects /dashboard to /AIS/dashboard under basename /board", async () => {
+    const root = renderAppAt(container, "/dashboard", "/board");
+    await waitForRoute(container, "DASHBOARD_PAGE@/AIS/dashboard");
+    expect(container.textContent).not.toContain("NOT_FOUND:invalid_company_prefix");
+    flushSync(() => root.unmount());
+  });
+
+  it("never treats board as companyPrefix inside the router", async () => {
+    const root = renderAppAt(container, "/AIS/dashboard", "/board");
+    await waitForRoute(container, "DASHBOARD_PAGE@/AIS/dashboard");
+    expect(container.textContent).not.toContain("NOT_FOUND:invalid_company_prefix:board");
+    expect(container.textContent).not.toContain("NOT_FOUND:invalid_company_prefix:dashboard");
+    flushSync(() => root.unmount());
+  });
+
+  it("recovers when the pathname still contains the UI base segment as companyPrefix", async () => {
+    const root = renderAppAt(container, "/board/AIS/dashboard");
+    await waitForRoute(container, "DASHBOARD_PAGE@/AIS/dashboard");
+    expect(container.textContent).not.toContain("NOT_FOUND:invalid_company_prefix:board");
+    flushSync(() => root.unmount());
+  });
+
+  it("recovers /board/ to the company dashboard when basename is missing", async () => {
+    const root = renderAppAt(container, "/board/");
+    await waitForRoute(container, "DASHBOARD_PAGE@/AIS/dashboard");
+    expect(container.textContent).not.toContain("NOT_FOUND:invalid_company_prefix:board");
     flushSync(() => root.unmount());
   });
 });

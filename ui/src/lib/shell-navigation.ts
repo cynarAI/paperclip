@@ -1,3 +1,5 @@
+import { stripUiBasePath } from "./ui-base-path";
+
 export type ContextualSidebarSurface =
   | "settings"
   | "apps"
@@ -16,7 +18,7 @@ const CONTEXTUAL_ORIGIN_KEY_PREFIX = "paperclip.contextualSidebar.origin";
 
 export function getCompanyPathSegments(pathname: string, companyPrefix: string | undefined): string[] {
   if (!companyPrefix) return [];
-  const segments = pathname.split("/").filter(Boolean);
+  const segments = stripUiBasePath(pathname).split("/").filter(Boolean);
   if (segments.length < 2) return [];
   if (segments[0]?.toUpperCase() !== companyPrefix.toUpperCase()) return [];
   return segments.slice(1);
@@ -61,7 +63,7 @@ function contextualOriginStorageKey(surface: ContextualSidebarSurface, companyPr
 }
 
 function isCompanyPath(pathname: string, companyPrefix: string) {
-  const first = pathname.split("/").filter(Boolean)[0];
+  const first = stripUiBasePath(pathname).split("/").filter(Boolean)[0];
   return first?.toUpperCase() === companyPrefix.toUpperCase();
 }
 

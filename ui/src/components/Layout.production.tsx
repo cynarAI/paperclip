@@ -61,6 +61,7 @@ import { queryKeys } from "../lib/queryKeys";
 import { scheduleMainContentFocus } from "../lib/main-content-focus";
 import { pinDocumentScrollToZero } from "../lib/pin-document-scroll";
 import { cn } from "../lib/utils";
+import { getCompanyPathSegments } from "../lib/shell-navigation";
 import { NotFoundPage } from "../pages/NotFound";
 import {
   PluginSlotMount,
@@ -75,17 +76,6 @@ function getCompanyRouteSegment(
   return (
     getCompanyPathSegments(pathname, companyPrefix)[0]?.toLowerCase() ?? null
   );
-}
-
-function getCompanyPathSegments(
-  pathname: string,
-  companyPrefix: string | undefined,
-): string[] {
-  if (!companyPrefix) return [];
-  const segments = pathname.split("/").filter(Boolean);
-  if (segments.length < 2) return [];
-  if (segments[0]?.toUpperCase() !== companyPrefix.toUpperCase()) return [];
-  return segments.slice(1);
 }
 
 const RESERVED_APP_SUBPATHS = new Set([

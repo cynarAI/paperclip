@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   classifyShellRoute,
   getCompanyPathSegments,
@@ -45,6 +45,13 @@ describe("shell navigation", () => {
 
   it("rejects a different company prefix", () => {
     expect(getCompanyPathSegments("/OTHER/issues/task-1", "PAP")).toEqual([]);
+  });
+
+  it("strips a configured UI base path before resolving company segments", () => {
+    vi.stubEnv("BASE_URL", "/board/");
+    expect(getCompanyPathSegments("/board/PAP/dashboard", "PAP")).toEqual(["dashboard"]);
+    expect(getCompanyPathSegments("/board/AIS/issues/task-1", "AIS")).toEqual(["issues", "task-1"]);
+    expect(classifyShellRoute("/board/PAP/agents/agent-1", "PAP").builtInContextualSurface).toBe("agent");
   });
 
   it("remembers only safe same-company origins", () => {
