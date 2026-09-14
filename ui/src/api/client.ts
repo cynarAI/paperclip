@@ -1,7 +1,9 @@
 import { getPageVisibility, getVisibilityHeaderValue } from "@/lib/page-visibility";
 import { tenantSessionRecovery } from "@/lib/tenant-session-recovery";
+import { getUiBasePath } from "@/lib/ui-base-path";
 
-const BASE = "/api";
+/** API root under the UI deploy prefix (e.g. /board/api) so shared-host /api can stay with another app. */
+const BASE = `${getUiBasePath()}/api`;
 
 export class ApiError extends Error {
   status: number;
