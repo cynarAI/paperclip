@@ -107,6 +107,7 @@ import {
   onboardingStepForCompany,
   shouldRedirectCompanylessRouteToOnboarding,
 } from "./lib/onboarding-route";
+import { getUiBasePathSegment, stripUiBasePath } from "./lib/ui-base-path";
 import { filterHiddenInstanceSettingsPath, normalizeRememberedInstanceSettingsPath } from "./lib/instance-settings";
 import { useCloudInstance } from "./hooks/useCloudInstance";
 import { useStreamlinedUiEnabled } from "./hooks/useStreamlinedUiEnabled";
@@ -620,6 +621,20 @@ export function OnboardingRoutePage() {
   );
 }
 
+function UiBasePathCompanyPrefixGate({ streamlinedUiEnabled }: { streamlinedUiEnabled: boolean }) {
+  const { companyPrefix } = useParams<{ companyPrefix: string }>();
+  const location = useLocation();
+  const baseSegment = getUiBasePathSegment();
+
+  if (baseSegment && companyPrefix?.toLowerCase() === baseSegment.toLowerCase()) {
+    const remainder = stripUiBasePath(location.pathname);
+    const target = remainder === "" ? "/" : remainder;
+    return <Navigate to={`${target}${location.search}${location.hash}`} replace />;
+  }
+
+  return streamlinedUiEnabled ? <Layout /> : <ProductionLayout />;
+}
+
 function CompanyRootRedirect() {
   const { companies, selectedCompany, loading } = useCompany();
   const location = useLocation();
@@ -765,6 +780,8 @@ export function App() {
           <Route path="instance" element={<LegacySettingsRedirect />} />
           <Route path="instance/settings" element={<LegacySettingsRedirect />} />
           <Route path="instance/settings/*" element={<LegacySettingsRedirect />} />
+          <Route path="dashboard" element={<UnprefixedBoardRedirect />} />
+          <Route path="dashboard/live" element={<UnprefixedBoardRedirect />} />
           <Route path="companies" element={<UnprefixedBoardRedirect />} />
           <Route path="issues" element={<UnprefixedBoardRedirect />} />
           <Route path="tasks" element={<UnprefixedBoardRedirect />} />
@@ -829,7 +846,10 @@ export function App() {
           <Route path="execution-workspaces/:workspaceId/runtime-logs" element={<UnprefixedExecutionWorkspaceRedirect />} />
           <Route path="execution-workspaces/:workspaceId/issues" element={<UnprefixedExecutionWorkspaceRedirect />} />
           <Route path="execution-workspaces/:workspaceId/routines" element={<UnprefixedExecutionWorkspaceRedirect />} />
-          <Route path=":companyPrefix" element={streamlinedUiEnabled ? <Layout /> : <ProductionLayout />}>
+          <Route
+            path=":companyPrefix"
+            element={<UiBasePathCompanyPrefixGate streamlinedUiEnabled={streamlinedUiEnabled} />}
+          >
             {boardRoutes(streamlinedUiEnabled)}
           </Route>
           <Route path="*" element={<NotFoundPage scope="global" />} />
