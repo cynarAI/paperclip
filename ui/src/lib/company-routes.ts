@@ -1,4 +1,4 @@
-import { stripUiBasePath } from "./ui-base-path";
+import { getUiBasePathSegment, stripUiBasePath } from "./ui-base-path";
 
 const BOARD_ROUTE_ROOTS = new Set([
   "dashboard",
@@ -51,7 +51,22 @@ function splitPath(path: string): { pathname: string; search: string; hash: stri
 }
 
 function normalizeAppPathname(pathname: string): string {
-  return stripUiBasePath(pathname);
+  let normalized = stripUiBasePath(pathname);
+  const baseSegment = getUiBasePathSegment();
+  if (!baseSegment) return normalized;
+
+  let segments = normalized.split("/").filter(Boolean);
+  while (segments[0] === baseSegment) {
+    segments = segments.slice(1);
+  }
+  return segments.length === 0 ? "/" : `/${segments.join("/")}`;
+}
+
+function isUiBasePathSegment(segment: string): boolean {
+  const baseSegment = getUiBasePathSegment();
+  // Match the deploy prefix literally (usually lowercase `board`). Do not
+  // case-fold: a company whose issue prefix is `BOARD` must keep `/BOARD/...`.
+  return baseSegment !== null && segment === baseSegment;
 }
 
 function getRootSegment(pathname: string): string | null {
@@ -76,11 +91,13 @@ export function isBoardPathWithoutPrefix(pathname: string): boolean {
 export function extractCompanyPrefixFromPath(pathname: string): string | null {
   const segments = normalizeAppPathname(pathname).split("/").filter(Boolean);
   if (segments.length === 0) return null;
-  const first = segments[0]!.toLowerCase();
-  if (GLOBAL_ROUTE_ROOTS.has(first) || BOARD_ROUTE_ROOTS.has(first)) {
+  const first = segments[0]!;
+  if (isUiBasePathSegment(first)) return null;
+  const firstLower = first.toLowerCase();
+  if (GLOBAL_ROUTE_ROOTS.has(firstLower) || BOARD_ROUTE_ROOTS.has(firstLower)) {
     return null;
   }
-  return normalizeCompanyPrefix(segments[0]!);
+  return normalizeCompanyPrefix(first);
 }
 
 export function applyCompanyPrefix(path: string, companyPrefix: string | null | undefined): string {

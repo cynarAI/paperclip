@@ -151,6 +151,22 @@ describe("company routes", () => {
     expect(applyCompanyPrefix("/board/tasks", "PAP")).toBe("/PAP/tasks");
   });
 
+  it("does not treat the UI base segment as a company slug after a double-prefixed path", () => {
+    vi.stubEnv("BASE_URL", "/board/");
+    expect(extractCompanyPrefixFromPath("/board")).toBeNull();
+    expect(extractCompanyPrefixFromPath("/board/")).toBeNull();
+    expect(extractCompanyPrefixFromPath("/board/dashboard")).toBeNull();
+    expect(extractCompanyPrefixFromPath("/board/board/")).toBeNull();
+    expect(extractCompanyPrefixFromPath("/board/board/dashboard")).toBeNull();
+    expect(isBoardPathWithoutPrefix("/board/dashboard")).toBe(true);
+  });
+
+  it("still resolves uppercase company prefixes when the UI base path is configured", () => {
+    vi.stubEnv("BASE_URL", "/board/");
+    expect(extractCompanyPrefixFromPath("/BOARD/dashboard")).toBe("BOARD");
+    expect(applyCompanyPrefix("/BOARD/dashboard", "PAP")).toBe("/BOARD/dashboard");
+  });
+
   it("preserves artifact deep-link anchors when applying the company prefix", () => {
     expect(applyCompanyPrefix("/issues/PAP-10205#work-product-wp-1", "PAP")).toBe(
       "/PAP/issues/PAP-10205#work-product-wp-1",
